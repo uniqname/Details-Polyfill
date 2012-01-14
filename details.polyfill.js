@@ -17,7 +17,7 @@
         addRule = function (styleTag, rule) {
             rule = '\n' + rule;
             if (styleTag.nodeName.toLowerCase() === 'style') {
-                if (styleTag.styleSheet && styleTag.styleSheet.cssText !== undefined) { //for ie
+                if (styleTag.styleSheet && styleTag.styleSheet.cssText !== undefined) { //for MSIE
                     styleTag.styleSheet.cssText = rule;
                 } else { styleTag.appendChild(doc.createTextNode(rule)); }
             }
@@ -36,7 +36,7 @@
                         break;
                     }
                 }
-                //Double check we didn't fail in finding a deatils element
+                //Double check we didn't fail in finding a details element
                 if (detailElmnt) {
                     //toggle the open attribute
                     if (detailElmnt.getAttribute('open')) {
@@ -62,10 +62,13 @@
                             'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
     }
     headElem.appendChild(detailStyleTag);
+    //W3C
     if (bodyElem.addEventListener) {
         bodyElem.addEventListener('click', toggle, false);
+    //IE
     } else if (bodyElem.attachEvent) {
         bodyElem.attachEvent('onclick', toggle);
+    // Don't overwrite a preexisting "onclick" attribute.
     } else if (bodyElem.onclick === null) {
         bodyElem.onclick = toggle;
     }
