@@ -1,42 +1,72 @@
-jQuery.fn.extend({
-	addRule : function (rule) {
-		rule = '\n' + rule;
-		return this.each(function(){
-			if (this.nodeName.toLowerCase() === 'style') {
-				if (this.styleSheet && this.styleSheet.cssText !== undefined) { //for ie
-					this.styleSheet.cssText = rule;
-				} else { this.appendChild(document.createTextNode(rule)); }
-			}
-		});
-	}
-});
-$(document).ready(function(){
-	'use strict';
-	var $deets = $('details'),
-		$deetStyles = $('<style />').attr('type', 'text/css'),
-		rules = 'details { display: block; overflow:hidden; } \n' +
-				'details[open] { height: auto; } \n' +
-				'summary { display: block; }';
-	$deetStyles.addRule(rules);
-	$deets.each(function(){
-		var detailsID = 'd' + Math.floor(Math.random() * 10000),
-			$deet = $(this).attr('data-detailsID', detailsID),
-			$summary = $deet.find('summary'),
-			height;
+/* Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php */
+(function (doc, win) {
+    'use strict';
+    var i, // a generic iterator
+        idCount = 0, //for generating unique identifiers
+        detailsID, //a unique identifier for each detail element
+        detailElem,
+        summaryElem,
+        height, //height of the summary element
+        headElem = doc.getElementsByTagName('head')[0],
+        bodyElem = doc.getElementsByTagName('body')[0],
+        detailElems = doc.getElementsByTagName('details'), //list of all details elements on the page
+        detailStyleTag = doc.createElement('style'),
+        rules = 'details { display: block; overflow:hidden; } \n' +
+                'details[open] { height: auto; } \n' +
+                'summary { display: block; }',
+        addRule = function (styleTag, rule) {
+            rule = '\n' + rule;
+            if (styleTag.nodeName.toLowerCase() === 'style') {
+                if (styleTag.styleSheet && styleTag.styleSheet.cssText !== undefined) { //for ie
+                    styleTag.styleSheet.cssText = rule;
+                } else { styleTag.appendChild(doc.createTextNode(rule)); }
+            }
+        },
+        toggle = function (e) {
+            var detailElmnt;
+            //makes sure the target is a summary element
+            if (e.target.nodeName.toLowerCase() === 'summary') {
+                detailElmnt = e.target;
+                //find the parent details node of the summary that was clicked
+                while (detailElmnt.nodeName.toLowerCase() !== 'details') {
+                    detailElmnt = detailElmnt.parentNode;
+                    //Break if we can't find a details element
+                    if (detailElmnt.nodeName.toLowerCase() === 'body') {
+                        detailElmnt = null;
+                        break;
+                    }
+                }
+                //Double check we didn't fail in finding a deatils element
+                if (detailElmnt) {
+                    //toggle the open attribute
+                    if (detailElmnt.getAttribute('open')) {
+                        detailElmnt.removeAttribute('open');
+                    } else { detailElmnt.setAttribute('open', 'open'); }
+                }
+            }
+        };
 
-		//Can't assume there is a summary element
-		if (! $summary.length) {
-			$summary = $('<summary>Details</summary>');
-			$deet.prepend($summary);
-		}
-		height = $summary.height();
-		$deetStyles.addRule('details[data-detailsid="' + detailsID + '"] { height: ' + height + 'px; }\n' +
-							'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
-	});
-	$('head').append($deetStyles);
-	$('summary').on('click', function(e){
-		var $detail = $(e.target).parents('details').first();
-		if ($detail.attr('open')) { $detail.removeAttr('open');
-		} else { $detail.attr('open', 'open'); }
-	});
-});
+    addRule(detailStyleTag, rules);
+    for (i = 0; i < detailElems.length; i++) {
+        detailElem = detailElems[i];
+        detailsID = 'd' + (idCount++);
+        detailElem.setAttribute('data-detailsID', detailsID);
+        summaryElem = detailElem.getElementsByTagName('summary')[0];
+        if (!summaryElem) {
+            summaryElem = doc.createElement('summary');
+            summaryElem.appendChild(doc.createTextNode('Details'));
+            detailElem.insertBefore(summaryElem, detailElem.firstChild);
+        }
+        height = summaryElem.offsetHeight;
+        addRule(detailStyleTag, 'details[data-detailsid="' + detailsID + '"] { height: ' + height + 'px; }\n' +
+                            'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
+    }
+    headElem.appendChild(detailStyleTag);
+    if (bodyElem.addEventListener) {
+        bodyElem.addEventListener('click', toggle, false);
+    } else if (bodyElem.attachEvent) {
+        bodyElem.attachEvent('onclick', toggle);
+    } else if (bodyElem.onclick === null) {
+        bodyElem.onclick = toggle;
+    }
+}(document, window, undefined));
