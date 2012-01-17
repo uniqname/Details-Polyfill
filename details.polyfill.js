@@ -7,8 +7,8 @@
         detailElem,
         summaryElem,
         height, //height of the summary element
-        headElem = doc.getElementsByTagName('head')[0],
-        bodyElem = doc.getElementsByTagName('body')[0],
+        headElem = (doc.getElementsByTagName('head')) ? doc.getElementsByTagName('head')[0] : doc.documentElement, //assume nothing
+        bodyElem = (doc.getElementsByTagName('body')) ? doc.getElementsByTagName('body')[0] : doc.documentElement, //assume nothing
         detailElems = doc.getElementsByTagName('details'), //list of all details elements on the page
         detailStyleTag = doc.createElement('style'),
         rules = 'details { display: block; overflow:hidden; } \n' +
