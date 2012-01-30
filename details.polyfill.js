@@ -1,20 +1,18 @@
 /* Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php */
 (function (doc) {
     'use strict';
-    var i,
+    var i, j,
+        textWrapper,
         idCount = 0,
-        detailsID,
-        detailsElem,
-        summaryElem,
-        height, //height of the summary element
         rootNode = doc.documentElement,
         headElem = doc.getElementsByTagName('head')[0] || rootNode,
         bodyElem = doc.getElementsByTagName('body')[0] || rootNode,
-        detailsElems = doc.getElementsByTagName('details'),
         detailStyleTag = doc.createElement('style'),
-        rules = 'details { display: block; } \n' +
+        rules = 'details { display: block; overflow:hidden; } \n' +
                 'details[open] { height: auto; } \n' +
-                'details > summary:first-child { visibility: visible; cursor: pointer; display:block; margin-bottom: 9999em; } \n' +
+                'details > summary:first-child { visibility: visible; cursor: pointer; display:inline-block; } \n' +
+                'details > * { visibility: hidden; } \n' +
+                'details[open] > * { visibility: visible } \n' +
                 'details[open] > summary:first-child { margin-bottom: 0; display: inline; }',
                 /* Technically, a summary element has a "Phrasing content" model and should be displayed inline.
                  * see http://dev.w3.org/html5/spec/Overview.html#the-summary-element,
@@ -52,31 +50,54 @@
                     } else { detailsElmnt.setAttribute('open', 'open'); }
                 }
             }
+        },
+        init = function () {
+            var detailsID,
+                detailsElem,
+                summaryElem,
+                height, //height of the summary element
+                detailsElems = doc.getElementsByTagName('details');
+
+            for (i = 0; i < detailsElems.length; i++) {
+                detailsElem = detailsElems[i];
+                if (!detailsElem.getAttribute('data-detailsid')) {
+                    detailsID = 'd' + (idCount++);
+                    detailsElem.setAttribute('data-detailsID', detailsID);
+                    /* The spec expects the functional <summary> element to be the first child node of a 
+                     * <details> element. In practice, it appears the first child <summary> element of a 
+                     * <detials> element is enlisted as the functional <summary> element and displayed as 
+                     * though it were the first child. For our purposes, we will do that explicitly. 
+                     * Additionaly, If a <summary> element does not exist, a default toggle is provided.
+                     */
+                    summaryElem = detailsElem.getElementsByTagName('summary')[0];
+                    if (!summaryElem) {
+                        summaryElem = doc.createElement('summary');
+                        summaryElem.appendChild(doc.createTextNode('Details'));
+                        detailsElem.insertBefore(summaryElem, detailsElem.firstChild);
+                    } else if ( summaryElem !== detailsElem.firstChild) {
+                        detailsElem.removeChild(summaryElem);
+                        detailsElem.insertBefore(summaryElem, detailsElem.firstChild);
+                    }
+                    height = summaryElem.offsetHeight;
+                    addRule(detailStyleTag, 'details[data-detailsid="' + detailsID + '"] { height: ' + height + 'px; }\n' +
+                                            'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
+
+                    //Text nodes are killing me here. Thanks to @Remy for the solve.
+                    for (j = 0; j < detailsElem.childNodes.length; j++ ) {
+                        if (detailsElem.childNodes[j].nodeName === '#text' && (detailsElem.childNodes[j].nodeValue||'').replace(/\s/g, '').length) {
+                            textWrapper = document.createElement('text');
+                            textWrapper.appendChild(detailsElem.childNodes[j]);
+                            detailsElem.insertBefore(textWrapper, detailsElem.childNodes[j]);
+                        }
+                    }   
+                }
+            }
         };
 
+    init();
+    document.getElementsByTagName('body')[0].addEventListener('DOMSubtreeModified', init, false);
     addRule(detailStyleTag, rules);
-    for (i = 0; i < detailsElems.length; i++) {
-        detailsElem = detailsElems[i];
-        detailsID = 'd' + (idCount++);
-        detailsElem.setAttribute('data-detailsID', detailsID);
-        /* The spec expects the functional <summary> element to be the first child node of a <details> element.
-         * In practice, it appears the first child <summary> element of a <detials> element is enlisted as the
-         * functional <summary> element and displayed as though it were the first child. For our purposes, we will 
-         * do that explicitly. Additionaly, If a <summary> element does not exist, a default toggle is provided.
-         */
-        summaryElem = detailsElem.getElementsByTagName('summary')[0];
-        if (!summaryElem) {
-            summaryElem = doc.createElement('summary');
-            summaryElem.appendChild(doc.createTextNode('Details'));
-            detailsElem.insertBefore(summaryElem, detailsElem.firstChild);
-        } else if ( summaryElem !== detailsElem.firstChild) {
-            detailsElem.removeChild(summaryElem);
-            detailsElem.insertBefore(summaryElem, detailsElem.firstChild);
-        }
-        height = summaryElem.offsetHeight;
-        addRule(detailStyleTag, 'details[data-detailsid="' + detailsID + '"] { height: ' + height + 'px; }\n' +
-                                'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
-    }
+    
     /* The inserted stylesheet needs to be first so as to have a minimal cascading coeffecient. 
      * The polyfill only adds default styling and should not interfere with other style rules.
      */
