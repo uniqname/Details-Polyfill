@@ -36,7 +36,7 @@
             } else if (el.attachEvent) {
                 el.attachEvent('on' + eventName, f);
             // Fallback, but don't overwrite a preexisting "onclick" attribute.
-            } else if (el['on' + eventName === null) {
+            } else if (el['on' + eventName] === null) {
                 el['on' + eventName] = f;
             }
         },
