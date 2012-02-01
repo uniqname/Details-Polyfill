@@ -28,6 +28,18 @@
                 } else { styleTag.appendChild(doc.createTextNode(rule)); }
             }
         },
+        addEvent = function (el, eventName, f) {
+            //W3C event biding
+            if (el.addEventListener) {
+                el.addEventListener(eventName, f);
+            //IE event binding
+            } else if (el.attachEvent) {
+                el.attachEvent('on' + eventName, f);
+            // Fallback, but don't overwrite a preexisting "onclick" attribute.
+            } else if (el['on' + eventName === null) {
+                el['on' + eventName] = f;
+            }
+        },
         toggle = function (e) {
             var detailsElmnt;
             /* When a <summary> element is clicked the parent <details> element's "open"
@@ -83,6 +95,10 @@
                                             'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
 
                     //Text nodes are killing me here. Thanks to @Remy for the solve.
+
+                    // Weighing the pros and cons of using a standard element like <span> or <b> vs a non-standard 
+                    // but more semantically meaninfull <text> element, I think <text> wins, though not without some
+                    // regret.
                     for (j = 0; j < detailsElem.childNodes.length; j++ ) {
                         if (detailsElem.childNodes[j].nodeName === '#text' && (detailsElem.childNodes[j].nodeValue||'').replace(/\s/g, '').length) {
                             textWrapper = document.createElement('text');
@@ -95,21 +111,12 @@
         };
 
     init();
-    document.getElementsByTagName('body')[0].addEventListener('DOMSubtreeModified', init, false);
     addRule(detailStyleTag, rules);
     
     /* The inserted stylesheet needs to be first so as to have a minimal cascading coeffecient. 
-     * The polyfill only adds default styling and should not interfere with other style rules.
+     * The polyfill only adds default or necessary styling and should not interfere with other style rules.
      */
     headElem.insertBefore(detailStyleTag, headElem.firstChild);
-    //W3C event biding
-    if (bodyElem.addEventListener) {
-        bodyElem.addEventListener('click', toggle, false);
-    //IE event binding
-    } else if (bodyElem.attachEvent) {
-        bodyElem.attachEvent('onclick', toggle);
-    // Fallback, but don't overwrite a preexisting "onclick" attribute.
-    } else if (bodyElem.onclick === null) {
-        bodyElem.onclick = toggle;
-    }
+    addEvent(bodyElem, 'click', toggle);
+    addEvent(bodyElem, 'DOMSubtreeModified', init);
 }(document, undefined));
