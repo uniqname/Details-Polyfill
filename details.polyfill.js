@@ -10,10 +10,11 @@
         detailStyleTag = doc.createElement('style'),
         rules = 'details { display: block; overflow:hidden; } \n' +
                 'details[open] { height: auto; } \n' +
-                'details > summary:first-child { visibility: visible; cursor: pointer; display:inline-block; } \n' +
-                'details > * { visibility: hidden; } \n' +
-                'details[open] > * { visibility: visible } \n' +
-                'details[open] > summary:first-child { margin-bottom: 0; display: inline; }',
+                'summary { display:inline-block; } \n' +
+                'details * { visibility: hidden; } \n' +
+                'summary:first-child { visibility: visible; cursor: pointer; } \n' +
+                'details[open] * { visibility: visible } \n' +
+                'details[open] summary { margin-bottom: 0; }',
                 /* Technically, a summary element has a "Phrasing content" model and should be displayed inline.
                  * see http://dev.w3.org/html5/spec/Overview.html#the-summary-element,
                  *     http://dev.w3.org/html5/spec/Overview.html#phrasing-content
@@ -21,11 +22,10 @@
                  * FYI: Chrome currently and incorrectly treats the <summary> element as block level.
                  */
         addRule = function (styleTag, rule) {
-            rule = '\n' + rule;
             if (styleTag.nodeName.toLowerCase() === 'style') {
-                if (styleTag.styleSheet && styleTag.styleSheet.cssText !== undefined) { //for MSIE
-                    styleTag.styleSheet.cssText = rule;
-                } else { styleTag.appendChild(doc.createTextNode(rule)); }
+                if (!!styleTag['styleSheet'] && styleTag.styleSheet['cssText'] !== undefined) { //for MSIE
+                    styleTag.styleSheet.cssText += '\n' + rule;
+                } else { styleTag.appendChild(doc.createTextNode('\n' + rule)); }
             }
         },
         addEvent = function (el, eventName, f) {
@@ -41,13 +41,15 @@
             }
         },
         toggle = function (e) {
-            var detailsElmnt;
             /* When a <summary> element is clicked the parent <details> element's "open"
              * attribute needs to be toggled to maintain the attribute's reflective nature.
              * see http://dev.w3.org/html5/spec/Overview.html#attr-details-open
              */
-            if (e.target.nodeName.toLowerCase() === 'summary') {
-                detailsElmnt = e.target;
+            var detailsElmnt,
+                target = e.target || e.srcElement;
+            
+            if (target.nodeName.toLowerCase() === 'summary') {
+                detailsElmnt = target;
                 while (detailsElmnt.nodeName.toLowerCase() !== 'details') {
                     detailsElmnt = detailsElmnt.parentNode;
                     //Break if we get to the root node without finding a details element.
@@ -60,6 +62,7 @@
                     if (detailsElmnt.getAttribute('open')) {
                         detailsElmnt.removeAttribute('open');
                     } else { detailsElmnt.setAttribute('open', 'open'); }
+                    bodyElem.className = bodyElem.className;
                 }
             }
         },
@@ -74,6 +77,7 @@
                 detailsElem = detailsElems[i];
                 if (!detailsElem.getAttribute('data-detailsid')) {
                     detailsID = 'd' + (idCount++);
+                    detailsElem.className += (' ' + detailsID);
                     detailsElem.setAttribute('data-detailsID', detailsID);
                     /* The spec expects the functional <summary> element to be the first child node of a 
                      * <details> element. In practice, it appears the first child <summary> element of a 
@@ -91,8 +95,8 @@
                         detailsElem.insertBefore(summaryElem, detailsElem.firstChild);
                     }
                     height = summaryElem.offsetHeight;
-                    addRule(detailStyleTag, 'details[data-detailsid="' + detailsID + '"] { height: ' + height + 'px; }\n' +
-                                            'details[data-detailsid="' + detailsID + '"][open] { height: auto; }');
+                    addRule(detailStyleTag, 'details.' + detailsID + ' { height: ' + height + 'px; }\n' +
+                                            'details.' + detailsID + '[open] { height: auto; }');
 
                     //Text nodes are killing me here. Thanks to @Remy for the solve.
 
@@ -109,14 +113,14 @@
                 }
             }
         };
-
-    init();
-    addRule(detailStyleTag, rules);
-    
-    /* The inserted stylesheet needs to be first so as to have a minimal cascading coeffecient. 
+    /*
+     * The inserted stylesheet needs to be first so as to have a minimal cascading coeffecient. 
+     * It also needs to be added to the DOM before IE can access it's properties.
      * The polyfill only adds default or necessary styling and should not interfere with other style rules.
      */
     headElem.insertBefore(detailStyleTag, headElem.firstChild);
+    init();
+    addRule(detailStyleTag, rules);
     addEvent(bodyElem, 'click', toggle);
     addEvent(bodyElem, 'DOMSubtreeModified', init);
 }(document, undefined));
