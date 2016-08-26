@@ -1,0 +1,23 @@
+{
+  "name": "details-polyfill",
+  "version": "1.0.0",
+  "description": "A W3C spec compliant polyfill of the details element",
+  "main": "details.polyfill.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uniqname/Details-Polyfill.git"
+  },
+  "keywords": [
+    "details",
+    "polyfill"
+  ],
+  "author": "Cory Brown <oh.wise.man@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/uniqname/Details-Polyfill/issues"
+  },
+  "homepage": "https://github.com/uniqname/Details-Polyfill#readme"
+}
